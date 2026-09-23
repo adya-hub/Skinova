@@ -85,6 +85,12 @@ export default function LandingPage() {
 
           <div className="hero-ctas">
             <button
+              onClick={() => navigate('profile')}
+              className="btn btn-soft btn-lg"
+            >
+              Create Your Skin Profile
+            </button>
+            <button
               onClick={() => navigate('analyze')}
               className="btn btn-primary btn-lg"
             >
@@ -157,6 +163,43 @@ export default function LandingPage() {
                   Try With Your Photo
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Create Your Profile on Skinova Spotlight */}
+          <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
+            <div
+              className="card card-hover"
+              style={{
+                maxWidth: '780px',
+                width: '100%',
+                padding: '22px 28px',
+                background: 'linear-gradient(135deg, #FFFFFF 0%, #F2F7F4 100%)',
+                border: '1px solid var(--color-primary-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Layers size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '3px' }}>Create Your Profile on Skinova</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                    Share your skin type, concerns, and routine so Skinova can personalize every analysis and recommendation.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('profile')}
+                className="btn btn-primary"
+              >
+                Create Skin Profile →
+              </button>
             </div>
           </div>
         </section>

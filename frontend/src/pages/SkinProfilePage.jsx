@@ -63,15 +63,60 @@ export default function SkinProfilePage() {
       <div className="container">
         <MedicalDisclaimer compact={true} />
 
-        <div style={{ marginBottom: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: 600, fontSize: '13.5px', marginBottom: '4px' }}>
-            <User size={16} />
-            <span>Personalized Context</span>
+        <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: 600, fontSize: '13.5px', marginBottom: '4px' }}>
+              <User size={16} />
+              <span>Personalized Skin Identity</span>
+            </div>
+            <h1 style={{ fontSize: '2.2rem', marginBottom: '8px' }}>Create Your Profile on Skinova</h1>
+            <p style={{ maxWidth: '640px' }}>
+              Configure your skin characteristics, current routine, and concerns so Skinova can ground every analysis and routine recommendation.
+            </p>
           </div>
-          <h1 style={{ fontSize: '2.1rem', marginBottom: '8px' }}>Your Skin Profile</h1>
-          <p style={{ maxWidth: '640px' }}>
-            This profile is securely stored and informs Skinova's AI reasoning, routine recommendations, and ingredient checks.
-          </p>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  skin_type: 'Combination',
+                  primary_concern: 'Acne-like breakouts',
+                  secondary_concerns: ['Visible dark spots'],
+                  age_range: '25-34',
+                  current_routine: '',
+                  products_used: '',
+                  breakout_frequency: '1-2 times per month',
+                  sun_exposure: 'Moderate',
+                  lifestyle_notes: ''
+                });
+              }}
+              className="btn btn-secondary btn-sm"
+              title="Reset form to create a new profile from scratch"
+            >
+              Start New Profile
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  skin_type: 'Combination',
+                  primary_concern: 'Acne-like breakouts',
+                  secondary_concerns: ['Visible dark spots', 'Mild redness around nose'],
+                  age_range: '25-34',
+                  current_routine: 'Gentle foam cleanser, hyaluronic serum, lightweight moisturizer',
+                  products_used: 'CeraVe Foaming Cleanser, Niacinamide Serum, SPF 50',
+                  breakout_frequency: '1-2 times per month',
+                  sun_exposure: 'Moderate (outdoor walks 3-4 days/week)',
+                  lifestyle_notes: 'Adequate hydration, indoor office environment'
+                });
+              }}
+              className="btn btn-soft btn-sm"
+              title="Load recommended default profile preset"
+            >
+              Load Recommended Preset
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px' }}>
@@ -203,7 +248,7 @@ export default function SkinProfilePage() {
                   className="btn btn-primary"
                 >
                   <Save size={16} />
-                  {saving ? 'Saving Profile...' : 'Save Profile Changes'}
+                  {saving ? 'Activating Profile...' : 'Save & Activate Profile'}
                 </button>
                 <button
                   type="button"

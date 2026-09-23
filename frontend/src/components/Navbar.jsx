@@ -48,13 +48,23 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* User Pill / Actions */}
+        {/* User Actions */}
         <div className="nav-actions">
+          <button
+            onClick={() => navigate('profile')}
+            className="btn btn-soft btn-sm"
+            style={{ fontWeight: 600 }}
+            title="Create Your Skin Profile"
+          >
+            <User size={14} />
+            Create Profile
+          </button>
+
           <button
             onClick={() => navigate('profile')}
             className="user-pill"
             style={{ border: 'none', background: 'var(--color-surface)', cursor: 'pointer' }}
-            title="View Skin Profile"
+            title="View Current Profile"
           >
             <div className="user-avatar">
               {user?.name ? user.name[0].toUpperCase() : 'A'}
