@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF5EE"/>
+      <stop offset="100%" stop-color="#EBE3D7"/>
+    </linearGradient>
+    <linearGradient id="skin2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDEEE2"/>
+      <stop offset="100%" stop-color="#F2D2BE"/>
+    </linearGradient>
+    <filter id="glow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="400" height="480" rx="16" fill="url(#bg2)"/>
+  
+  <!-- Hair back -->
+  <path d="M110 80 Q200 30 290 80 Q330 200 320 340 L80 340 Q70 200 110 80 Z" fill="#543D2B"/>
+  
+  <!-- Neck & Shoulders -->
+  <path d="M165 310 L165 380 Q165 420 80 460 L320 460 Q235 420 235 380 L235 310 Z" fill="#E8C3AC"/>
+  
+  <!-- Head / Face -->
+  <ellipse cx="200" cy="220" rx="84" ry="112" fill="url(#skin2)"/>
+  
+  <!-- Ears -->
+  <circle cx="114" cy="225" r="13" fill="#ECC7B2"/>
+  <circle cx="286" cy="225" r="13" fill="#ECC7B2"/>
+  
+  <!-- Hair Top -->
+  <path d="M115 130 Q160 80 200 82 Q240 80 285 130 Q240 100 200 100 Q160 100 115 130 Z" fill="#6B4E38"/>
+  
+  <!-- Eyes -->
+  <path d="M152 196 Q168 188 184 196" stroke="#4A3423" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <path d="M216 196 Q232 188 248 196" stroke="#4A3423" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <ellipse cx="168" cy="204" rx="4.5" ry="5.5" fill="#4A3423"/>
+  <ellipse cx="232" cy="204" rx="4.5" ry="5.5" fill="#4A3423"/>
+  
+  <!-- Nose -->
+  <path d="M198 215 Q200 242 195 247 Q200 251 205 247" stroke="#DCA88F" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Diffuse Redness on Cheeks & Nose (Sensitive Skin) -->
+  <ellipse cx="155" cy="245" rx="30" ry="22" fill="#E57373" opacity="0.35" filter="url(#glow2)"/>
+  <ellipse cx="245" cy="245" rx="30" ry="22" fill="#E57373" opacity="0.35" filter="url(#glow2)"/>
+  <ellipse cx="200" cy="240" rx="14" ry="12" fill="#E57373" opacity="0.3" filter="url(#glow2)"/>
+  
+  <!-- Lips -->
+  <path d="M180 282 Q200 276 220 282 Q200 293 180 282 Z" fill="#D4837E"/>
+
+  <!-- Badge Overlay -->
+  <rect x="20" y="20" width="160" height="28" rx="14" fill="#3A6B56" opacity="0.9"/>
+  <text x="100" y="38" font-family="sans-serif" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">Sample B: Sensitive / Erythema</text>
+</svg>
