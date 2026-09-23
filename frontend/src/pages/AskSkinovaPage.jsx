@@ -195,10 +195,10 @@ export default function AskSkinovaPage() {
                 type="submit"
                 disabled={!inputValue.trim() || loading}
                 className="btn btn-primary"
-                style={{ padding: '0 20px' }}
+                style={{ padding: '0 20px', gap: '8px' }}
               >
-                <Send size={16} />
-                Send
+                <Sparkles size={16} />
+                Consult Skinova
               </button>
             </form>
           </div>
