@@ -63,11 +63,13 @@ export default function AskSkinovaPage() {
       };
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
+      console.error('Skinova chat error:', err);
+      const detailMsg = err.message || 'Unable to connect to Skinova AI agent';
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Skinova encountered a temporary connection issue. Please verify your connection or try again.',
+          content: `Skinova connection notice: ${detailMsg}. Please ensure the backend server is running on http://127.0.0.1:8000 and try again.`,
           tool_logs: []
         }
       ]);

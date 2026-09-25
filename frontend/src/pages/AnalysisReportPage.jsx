@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
-import { Sparkles, MessageSquare, ArrowRight, ShieldAlert, CheckCircle, Droplets, Sun, Moon, Info, AlertTriangle, BookOpen } from 'lucide-react';
+import { Sparkles, MessageSquare, ArrowRight, ShieldAlert, CheckCircle, Droplets, Sun, Moon, Info, AlertTriangle, BookOpen, Scan, Activity } from 'lucide-react';
 import MedicalDisclaimer from '../components/MedicalDisclaimer';
+import SkinScan3DOverlay from '../components/SkinScan3DOverlay';
 
 export default function AnalysisReportPage() {
   const { currentReport, setCurrentReport, pageParams, navigate } = useApp();
@@ -89,13 +90,13 @@ export default function AnalysisReportPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="container">
+    <div className="page-wrapper aurora-hero-bg">
+      <div className="container" style={{ position: 'relative', zIndex: 1 }}>
         {/* Breadcrumb / Action Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <span className="badge badge-primary" style={{ marginBottom: '6px' }}>CONFIDENTIAL REPORT</span>
-            <h1 style={{ fontSize: '2.2rem' }}>Your Skinova Report</h1>
+            <span className="badge badge-primary" style={{ marginBottom: '6px' }}>CONFIDENTIAL 3D DERMAL REPORT</span>
+            <h1 style={{ fontSize: '2.4rem' }}>Your Skinova Report</h1>
             <p style={{ fontSize: '13.5px', color: 'var(--color-text-muted)' }}>
               Analysis ID: {rep.id} · Generated on {new Date(rep.created_at).toLocaleDateString()}
             </p>
@@ -123,25 +124,21 @@ export default function AnalysisReportPage() {
 
         {/* Top Summary: Image + Profile Snapshot + Indicators */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-          {/* Photo & Quality Card */}
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div style={{ position: 'relative', width: '220px', height: '260px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--color-border)', marginBottom: '16px' }}>
-              <img
-                src={rep.image_url}
-                alt="Analyzed face"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+          {/* Photo & 3D Cybernetic Overlay Card */}
+          <div className="card feature-card-3d" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '24px' }}>
+            <div style={{ width: '100%', marginBottom: '14px' }}>
+              <SkinScan3DOverlay imageUrl={rep.image_url} isScanning={false} />
             </div>
             <span className="badge badge-emerald" style={{ marginBottom: '8px' }}>
-              Quality: {rep.image_quality?.status || 'Good'}
+              Cutaneous Telemetry: {rep.image_quality?.status || 'Good'}
             </span>
             <p style={{ fontSize: '12.5px', color: 'var(--color-text-light)' }}>
-              {rep.image_quality?.notes?.[0] || 'Clear resolution and illumination.'}
+              {rep.image_quality?.notes?.[0] || 'Calibrated natural lighting and balanced facial alignment.'}
             </p>
           </div>
 
           {/* Visible Skin Indicators Dashboard */}
-          <div className="card">
+          <div className="card feature-card-3d">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
               <h3 style={{ fontSize: '17px' }}>Visible Skin Indicators</h3>
               <span style={{ fontSize: '12px', color: 'var(--color-text-light)' }}>Visual Calibration</span>

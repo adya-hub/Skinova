@@ -2,10 +2,18 @@
 Main FastAPI Application Entrypoint for Skinova AI.
 """
 
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+
+# Configure application-wide logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s]: %(message)s"
+)
+logger = logging.getLogger("skinova.main")
 
 from .config import APP_NAME, APP_TAGLINE, DISCLAIMER_TEXT, UPLOAD_DIR, BASE_DIR
 from .api.routes_auth import router as auth_router

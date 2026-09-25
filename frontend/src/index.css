@@ -704,3 +704,208 @@ p {
     max-width: 92%;
   }
 }
+
+/* ========================================================
+   Skinova 3D & Creative Cybernetic Aesthetics System
+   ======================================================== */
+
+/* Glowing Gradient Text */
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #1B4D3E 0%, #2D5A46 40%, #468669 70%, #58FFC4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.gradient-text-glow {
+  text-shadow: 0 0 25px rgba(88, 255, 196, 0.4);
+}
+
+/* 3D Glass Card Container */
+.glass-card-3d {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.glass-card-3d:hover {
+  box-shadow: 0 24px 60px rgba(10, 25, 18, 0.4), 0 0 40px rgba(88, 255, 196, 0.2);
+}
+
+/* Ambient Aurora Backdrop */
+.aurora-hero-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurora-hero-bg::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  right: -80px;
+  width: 550px;
+  height: 550px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(91, 142, 125, 0.16) 0%, rgba(88, 255, 196, 0.04) 50%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  animation: auroraFloat 12s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+.aurora-hero-bg::after {
+  content: '';
+  position: absolute;
+  bottom: 40px;
+  left: -100px;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45, 90, 70, 0.14) 0%, rgba(72, 202, 228, 0.05) 55%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: auroraFloat 16s ease-in-out infinite alternate-reverse;
+  z-index: 0;
+}
+
+@keyframes auroraFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+  100% { transform: translate(-30px, 50px) scale(0.95); }
+}
+
+/* 3D Scanning Laser Beam Keyframe */
+@keyframes laserScan {
+  0% {
+    top: 0%;
+    opacity: 0.9;
+  }
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+  100% {
+    top: 0%;
+    opacity: 0.9;
+  }
+}
+
+/* 3D Targeting Reticle */
+.reticle-target {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.reticle-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(88, 255, 196, 0.3);
+  border: 1.5px solid #58FFC4;
+  box-shadow: 0 0 10px #58FFC4;
+  position: relative;
+  display: block;
+}
+
+.reticle-dot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(88, 255, 196, 0.6);
+  animation: spin 6s linear infinite;
+}
+
+.reticle-label {
+  background: rgba(10, 24, 18, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(88, 255, 196, 0.35);
+  color: #58FFC4;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* 3D Interactive Hotspot Pill in HUD */
+.hotspot-pill-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hotspot-pill-btn:hover {
+  background: rgba(88, 255, 196, 0.2);
+  border-color: #58FFC4;
+  color: #58FFC4;
+  transform: translateY(-1px);
+}
+
+/* Modern 3D Floating Feature Card */
+.feature-card-3d {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card-3d::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2D5A46, #58FFC4);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.feature-card-3d:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 14px 34px rgba(27, 43, 34, 0.08), 0 0 20px rgba(91, 142, 125, 0.12);
+  border-color: var(--color-primary-border);
+}
+
+.feature-card-3d:hover::after {
+  opacity: 1;
+}
+
+/* Futuristic Live Radar Dot */
+.live-radar-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10B981;
+}
+
+.live-radar-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.4);
+  animation: radarRipple 1.8s ease-out infinite;
+}
+
+@keyframes radarRipple {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+

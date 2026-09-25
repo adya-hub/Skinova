@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
-import { UploadCloud, Camera, Check, X, AlertTriangle, ShieldCheck, Sparkles, RefreshCw } from 'lucide-react';
+import { UploadCloud, Camera, Check, X, AlertTriangle, ShieldCheck, Sparkles, RefreshCw, Activity, Layers, Scan } from 'lucide-react';
 import MedicalDisclaimer from '../components/MedicalDisclaimer';
+import SkinScan3DOverlay from '../components/SkinScan3DOverlay';
 
 export default function AnalyzeSkinPage() {
   const { user, profile, setCurrentReport, navigate } = useApp();
@@ -20,12 +21,12 @@ export default function AnalyzeSkinPage() {
   const fileInputRef = useRef(null);
 
   const stages = [
-    'Image received & uploaded securely',
-    'Illumination and focal clarity validated',
-    'Analyzing visible cutaneous indicators (sebum, redness, congestion)',
-    'Querying skincare educational literature & RAG corpus',
-    'Screening safety guardrails & non-diagnostic parameters',
-    'Personalizing your Skinova Report'
+    'Image received & uploaded securely (TLS 1.3)',
+    'Validating illumination, D65 color temperature & sharpness',
+    '3D mesh alignment & mapping cutaneous zones (T-zone, Malar, Perioral)',
+    'Extracting cutaneous telemetry (erythema, sebum, follicular congestion)',
+    'Querying dermatological literature & evidence-grounded RAG index',
+    'Screening clinical safety guardrails & generating Skinova report'
   ];
 
   const sampleFaces = [
@@ -119,21 +120,45 @@ export default function AnalyzeSkinPage() {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="container-narrow">
-        <MedicalDisclaimer />
+    <div className="page-wrapper aurora-hero-bg">
+      <div className="container-narrow" style={{ position: 'relative', zIndex: 1 }}>
+        <MedicalDisclaimer compact={true} />
 
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <span className="badge badge-primary" style={{ marginBottom: '12px' }}>AI Cutaneous Scan</span>
-          <h1 style={{ fontSize: '2.4rem', marginBottom: '10px' }}>Analyze Your Skin</h1>
-          <p style={{ maxWidth: '580px', margin: '0 auto', fontSize: '15px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-primary-border)',
+              borderRadius: 'var(--radius-full)',
+              padding: '4px 12px',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--color-primary)',
+              marginBottom: '10px'
+            }}
+          >
+            <Scan size={14} /> 3D Cutaneous Vision Lab
+          </div>
+          <h1 style={{ fontSize: '2.4rem', marginBottom: '10px' }}>
+            AI Skin Image Analysis
+          </h1>
+          <p style={{ maxWidth: '620px', margin: '0 auto', fontSize: '15px', color: 'var(--color-text-muted)' }}>
             Upload a clear face photo. Skinova evaluates visible characteristics, provides uncertainty-aware observations, and customizes your skincare advice.
           </p>
         </div>
 
-        {/* Multi-Stage Loading Overlay */}
+        {/* Multi-Stage Loading Overlay with Live 3D Scanner */}
         {analyzing ? (
-          <div className="stages-loader-box">
+          <div className="feature-card-3d" style={{ padding: '36px', maxWidth: '620px', margin: '0 auto', textAlign: 'center' }}>
+            {previewUrl && (
+              <div style={{ marginBottom: '28px' }}>
+                <SkinScan3DOverlay imageUrl={previewUrl} isScanning={true} />
+              </div>
+            )}
+
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div
                 style={{
@@ -145,18 +170,19 @@ export default function AnalyzeSkinPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 16px'
+                  margin: '0 auto 16px',
+                  boxShadow: '0 0 20px rgba(88, 255, 196, 0.3)'
                 }}
               >
                 <Sparkles size={28} className="spinner" />
               </div>
-              <h3 style={{ fontSize: '20px', marginBottom: '6px' }}>Skinova is analyzing your image...</h3>
+              <h3 style={{ fontSize: '20px', marginBottom: '6px' }}>Skinova is analyzing cutaneous telemetry...</h3>
               <p style={{ fontSize: '13.5px', color: 'var(--color-text-muted)' }}>
-                Running agent tools, RAG knowledge retrieval, and clinical guardrails.
+                Running 3D mesh zone mapping, RAG evidence grounding, and clinical guardrails.
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
               {stages.map((st, idx) => {
                 const isDone = idx < currentStageIndex;
                 const isActive = idx === currentStageIndex;
@@ -165,7 +191,7 @@ export default function AnalyzeSkinPage() {
                     <div className={`stage-icon-wrap ${isDone ? 'stage-done' : isActive ? 'stage-active' : 'stage-pending'}`}>
                       {isDone ? <Check size={16} /> : isActive ? '⟳' : idx + 1}
                     </div>
-                    <span style={{ fontWeight: isActive ? 600 : 400, color: isActive ? 'var(--color-text-main)' : isDone ? 'var(--color-primary)' : 'var(--color-text-light)' }}>
+                    <span style={{ fontWeight: isActive ? 600 : 400, color: isActive ? 'var(--color-primary)' : isDone ? 'var(--color-text-main)' : 'var(--color-text-light)', fontSize: '13.5px' }}>
                       {st}
                     </span>
                   </div>
@@ -174,12 +200,27 @@ export default function AnalyzeSkinPage() {
             </div>
           </div>
         ) : (
-          <div className="card" style={{ padding: '36px' }}>
+          <div className="card feature-card-3d" style={{ padding: '36px' }}>
             {/* Step 1: Skin Profile Confirmation Banner */}
-            <div style={{ background: 'var(--color-bg)', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #F4F8F5 0%, #FFFFFF 100%)',
+                padding: '14px 18px',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '24px',
+                border: '1px solid var(--color-primary-border)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}
+            >
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--color-text-light)', display: 'block' }}>Connected Profile</span>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--color-text-light)', display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Connected Profile
+                </span>
+                <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--color-primary)' }}>
                   {profile.skin_type} Skin · {profile.primary_concern}
                 </span>
               </div>
@@ -200,38 +241,12 @@ export default function AnalyzeSkinPage() {
               </div>
             )}
 
-            {/* Upload or Preview Box */}
+            {/* Upload or 3D Cybernetic Preview Box */}
             {previewUrl ? (
               <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-                <div style={{ position: 'relative', display: 'inline-block', maxWidth: '340px', width: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '2px solid var(--color-border)' }}>
-                  <img
-                    src={previewUrl}
-                    alt="Upload preview"
-                    style={{ width: '100%', height: '340px', objectFit: 'cover', display: 'block' }}
-                  />
-                  <button
-                    onClick={handleClearImage}
-                    style={{
-                      position: 'absolute',
-                      top: '12px',
-                      right: '12px',
-                      background: 'rgba(0, 0, 0, 0.65)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                    title="Remove image"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                <SkinScan3DOverlay imageUrl={previewUrl} isScanning={false} />
+
+                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
                   <button
                     onClick={handleClearImage}
                     className="btn btn-secondary btn-sm"
@@ -257,7 +272,7 @@ export default function AnalyzeSkinPage() {
                   style={{
                     border: `2px dashed ${isDragging ? 'var(--color-primary)' : 'var(--color-border)'}`,
                     borderRadius: 'var(--radius-xl)',
-                    padding: '48px 24px',
+                    padding: '44px 24px',
                     textAlign: 'center',
                     backgroundColor: isDragging ? 'var(--color-primary-light)' : 'var(--color-bg)',
                     cursor: 'pointer',
@@ -306,7 +321,7 @@ export default function AnalyzeSkinPage() {
 
                 {/* Instant Demo Samples */}
                 <div style={{ marginBottom: '28px' }}>
-                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '12px', textAlign: 'center' }}>
                     — Or try instantly with a verified sample skin image —
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
@@ -333,12 +348,12 @@ export default function AnalyzeSkinPage() {
 
             {/* Quality Guidance */}
             <div style={{ background: 'var(--color-accent-subtle)', border: '1px solid var(--color-primary-border)', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: '24px', fontSize: '13px', color: 'var(--color-primary)' }}>
-              <strong>Quality Guidance:</strong> For better results, use a clear image with good natural lighting, neutral facial expression, and minimal filters or heavy makeup.
+              <strong>Quality Guidance:</strong> For optimal analysis, use a clear image with balanced natural lighting, neutral facial expression, and minimal filters or heavy makeup.
             </div>
 
             {/* Consent & Privacy Notice Checkbox */}
             <div style={{ marginBottom: '28px' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', fontSize: '13.5px', color: 'var(--color-text-main)', lineHeight: 1.5 }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', fontSize: '13px', color: 'var(--color-text-main)', lineHeight: 1.5 }}>
                 <input
                   type="checkbox"
                   checked={consentAgreed}
@@ -362,7 +377,8 @@ export default function AnalyzeSkinPage() {
                   width: '100%',
                   maxWidth: '380px',
                   opacity: (!previewUrl || !consentAgreed) ? 0.6 : 1,
-                  cursor: (!previewUrl || !consentAgreed) ? 'not-allowed' : 'pointer'
+                  cursor: (!previewUrl || !consentAgreed) ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 16px rgba(45, 90, 70, 0.3)'
                 }}
               >
                 <Sparkles size={18} />

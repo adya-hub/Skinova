@@ -96,30 +96,77 @@ class SkinImageAnalysisTool:
                 "error": f"Skinova couldn't process this image: {str(e)}. Please upload a valid JPEG or PNG photo."
             }
 
+import logging
+
+logger = logging.getLogger("skinova.agent.tools")
+
 class SkinProfileRetrievalTool:
     """
-    Retrieves and summarizes user skin profile context.
+    Retrieves and summarizes user skin profile context from persistent storage / database.
     """
     name = "skin_profile_retrieval"
-    description = "Retrieves user skin type, primary concerns, sensitivity, and current skincare habits."
+    description = "Retrieves user skin type, primary concerns, sensitivity, and current skincare habits from the database."
 
-    def execute(self, profile_data: Dict[str, Any]) -> Dict[str, Any]:
-        skin_type = profile_data.get("skin_type", "Combination")
-        primary_concern = profile_data.get("primary_concern", "Acne-prone")
-        secondary_concerns = profile_data.get("secondary_concerns", ["Dark Spots", "Uneven Texture"])
-        current_routine = profile_data.get("current_routine", "Basic Cleanser and Moisturizer")
-        age_range = profile_data.get("age_range", "20-29")
-        breakout_freq = profile_data.get("breakout_frequency", "Occasional")
-        sun_exposure = profile_data.get("sun_exposure", "Moderate")
+    def execute(self, user_id_or_data: Any = "demo_user") -> Dict[str, Any]:
+        from ..data.storage import get_profile
+
+        user_id = "demo_user"
+        profile_data = {}
+
+        if isinstance(user_id_or_data, str):
+            user_id = user_id_or_data
+            logger.info("[SkinProfileRetrievalTool] Querying database for user_id='%s'...", user_id)
+            profile_data = get_profile(user_id)
+        elif isinstance(user_id_or_data, dict):
+            user_id = user_id_or_data.get("user_id", "demo_user")
+            # If the dictionary is partial (e.g. only 1 or 2 fields), fetch the full profile from DB and merge
+            db_profile = get_profile(user_id)
+            profile_data = {**db_profile, **user_id_or_data}
+            logger.info("[SkinProfileRetrievalTool] Retrieved profile from database for user_id='%s' with overrides", user_id)
+        else:
+            logger.info("[SkinProfileRetrievalTool] Loading default profile from database for 'demo_user'...")
+            profile_data = get_profile("demo_user")
+
+        skin_type = profile_data.get("skin_type") or "Combination"
+        primary_concern = profile_data.get("primary_concern") or "Acne-prone"
+        secondary_concerns = profile_data.get("secondary_concerns") or ["Dark Spots", "Uneven Texture"]
+        current_routine = profile_data.get("current_routine") or "Basic Cleanser and Moisturizer"
+        products_used = profile_data.get("products_used") or []
+        age_range = profile_data.get("age_range") or "25-34"
+        breakout_freq = profile_data.get("breakout_frequency") or "Occasional"
+        sun_exposure = profile_data.get("sun_exposure") or "Moderate"
+        lifestyle_notes = profile_data.get("lifestyle_notes") or ""
+
+        sec_str = ', '.join(secondary_concerns) if isinstance(secondary_concerns, list) else str(secondary_concerns)
+        prod_str = ', '.join(products_used) if isinstance(products_used, list) else str(products_used)
 
         summary = (
             f"Skin Type: {skin_type} | Age: {age_range} | "
             f"Primary Concern: {primary_concern} | "
-            f"Secondary: {', '.join(secondary_concerns) if isinstance(secondary_concerns, list) else secondary_concerns} | "
-            f"Current Routine: {current_routine} | Breakouts: {breakout_freq} | Sun: {sun_exposure}"
+            f"Secondary: {sec_str} | "
+            f"Current Routine: {current_routine} | Products: {prod_str} | "
+            f"Breakouts: {breakout_freq} | Sun: {sun_exposure}"
         )
+
+        logger.info(
+            "[SkinProfileRetrievalTool] Profile successfully retrieved: Skin Type='%s', Concern='%s', Routine='%s'",
+            skin_type, primary_concern, current_routine
+        )
+
         return {
+            "success": True,
+            "user_id": user_id,
+            "skin_type": skin_type,
+            "primary_concern": primary_concern,
+            "secondary_concerns": secondary_concerns,
+            "current_routine": current_routine,
+            "products_used": products_used,
+            "age_range": age_range,
+            "breakout_frequency": breakout_freq,
+            "sun_exposure": sun_exposure,
+            "lifestyle_notes": lifestyle_notes,
             "profile_summary": summary,
+            "profile": profile_data,
             "raw": profile_data
         }
 

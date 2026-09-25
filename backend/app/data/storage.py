@@ -6,9 +6,12 @@ Manages user profiles, analysis history, routines, and user privacy data deletio
 import json
 import uuid
 import shutil
+import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from ..config import STORAGE_DIR, UPLOAD_DIR
+
+logger = logging.getLogger("skinova.data.storage")
 
 PROFILES_FILE = STORAGE_DIR / "profiles.json"
 ANALYSES_FILE = STORAGE_DIR / "analyses.json"
@@ -19,13 +22,18 @@ def _load_json(file_path: Path, default: Any) -> Any:
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except Exception as e:
+            logger.error("[Storage] Failed to read JSON from %s: %s", file_path, e)
             return default
     return default
 
 def _save_json(file_path: Path, data: Any):
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    try:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error("[Storage] Failed to save JSON to %s: %s", file_path, e)
 
 # Initial seed data for demo profile
 DEFAULT_PROFILE = {
@@ -44,9 +52,19 @@ DEFAULT_PROFILE = {
     "created_at": "2026-09-20T10:00:00Z"
 }
 
+# Ensure PROFILES_FILE physically exists on disk
+if not PROFILES_FILE.exists():
+    _save_json(PROFILES_FILE, {"demo_user": DEFAULT_PROFILE})
+    logger.info("[Storage] Initialized %s with default profile", PROFILES_FILE)
+
 def get_profile(user_id: str = "demo_user") -> Dict[str, Any]:
     profiles = _load_json(PROFILES_FILE, {})
-    return profiles.get(user_id, DEFAULT_PROFILE)
+    profile = profiles.get(user_id)
+    if not profile:
+        logger.info("[Storage] Profile for '%s' not found in %s, returning DEFAULT_PROFILE", user_id, PROFILES_FILE)
+        return DEFAULT_PROFILE.copy()
+    logger.info("[Storage] Retrieved profile for user_id='%s' (Skin Type: %s, Concern: %s)", user_id, profile.get("skin_type"), profile.get("primary_concern"))
+    return profile
 
 def save_profile(user_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
     profiles = _load_json(PROFILES_FILE, {})
@@ -55,6 +73,7 @@ def save_profile(user_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
     current["user_id"] = user_id
     profiles[user_id] = current
     _save_json(PROFILES_FILE, profiles)
+    logger.info("[Storage] Saved updated profile for user_id='%s' (Skin Type: %s)", user_id, current.get("skin_type"))
     return current
 
 def save_analysis(analysis_data: Dict[str, Any]) -> Dict[str, Any]:
