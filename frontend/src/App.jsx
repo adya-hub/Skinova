@@ -1,22 +1,48 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// Pages
-import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
-import SkinProfilePage from './pages/SkinProfilePage';
-import AnalyzeSkinPage from './pages/AnalyzeSkinPage';
-import AnalysisReportPage from './pages/AnalysisReportPage';
-import AskSkinovaPage from './pages/AskSkinovaPage';
-import IngredientCheckerPage from './pages/IngredientCheckerPage';
-import RoutineBuilderPage from './pages/RoutineBuilderPage';
-import ProgressTrackingPage from './pages/ProgressTrackingPage';
-import PrivacyPage from './pages/PrivacyPage';
-import AboutPage from './pages/AboutPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
+// Code-split pages for optimized bundle loading
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SkinProfilePage = lazy(() => import('./pages/SkinProfilePage'));
+const AnalyzeSkinPage = lazy(() => import('./pages/AnalyzeSkinPage'));
+const AnalysisReportPage = lazy(() => import('./pages/AnalysisReportPage'));
+const AskSkinovaPage = lazy(() => import('./pages/AskSkinovaPage'));
+const IngredientCheckerPage = lazy(() => import('./pages/IngredientCheckerPage'));
+const RoutineBuilderPage = lazy(() => import('./pages/RoutineBuilderPage'));
+const ProgressTrackingPage = lazy(() => import('./pages/ProgressTrackingPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+
+function PageFallback() {
+  return (
+    <div style={{
+      minHeight: '60vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '16px',
+      color: 'var(--color-primary)'
+    }}>
+      <div style={{
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        border: '3px solid var(--color-primary-light)',
+        borderTopColor: 'var(--color-primary)',
+        animation: 'spin 0.8s linear infinite'
+      }} />
+      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-muted)' }}>
+        Loading Skinova...
+      </span>
+    </div>
+  );
+}
 
 function MainRouter() {
   const { activePage, toast } = useApp();
@@ -58,7 +84,9 @@ function MainRouter() {
     <>
       <Navbar />
       <main style={{ minHeight: 'calc(100vh - 72px)' }}>
-        {renderPage()}
+        <Suspense fallback={<PageFallback />}>
+          {renderPage()}
+        </Suspense>
       </main>
       <Footer />
 

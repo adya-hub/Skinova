@@ -62,6 +62,29 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Performance Mode: 'smooth' (default for low/mid hardware & battery saving) vs 'enhanced'
+  const [perfMode, setPerfMode] = useState(() => {
+    const saved = localStorage.getItem('skinova_perf_mode');
+    if (saved === 'smooth' || saved === 'enhanced') return saved;
+    // Auto-detect prefers-reduced-motion or modest hardware (<= 4 CPU cores or small mobile)
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const isModestDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || window.innerWidth < 768;
+    return (prefersReducedMotion || isModestDevice) ? 'smooth' : 'smooth'; // Smooth Mode default ensures great experience everywhere
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.perfMode = perfMode;
+    localStorage.setItem('skinova_perf_mode', perfMode);
+  }, [perfMode]);
+
+  const togglePerfMode = () => {
+    setPerfMode((prev) => {
+      const next = prev === 'smooth' ? 'enhanced' : 'smooth';
+      showToast(next === 'smooth' ? '🌿 Smooth Mode activated (low battery & high FPS)' : '✨ Enhanced 3D Visuals activated', 'info');
+      return next;
+    });
+  };
+
   const updateProfileContext = async (newFields) => {
     try {
       const res = await api.updateProfile(newFields, user.id);
@@ -88,7 +111,10 @@ export function AppProvider({ children }) {
         pageParams,
         navigate,
         toast,
-        showToast
+        showToast,
+        perfMode,
+        setPerfMode,
+        togglePerfMode
       }}
     >
       {children}

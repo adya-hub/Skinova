@@ -1,11 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Sparkles, Layers, ShieldCheck, Zap, Info, Compass } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
+  const { perfMode } = useApp();
   const containerRef = useRef(null);
   const [selectedKey, setSelectedKey] = useState(initialMolecule);
   const [isRotating, setIsRotating] = useState(true);
+  const isRotatingRef = useRef(isRotating);
+
+  useEffect(() => {
+    isRotatingRef.current = isRotating;
+  }, [isRotating]);
 
   const moleculesData = {
     salicylic: {
@@ -146,14 +153,19 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
 
     const width = container.clientWidth;
     const height = container.clientHeight || 340;
+    const isSmooth = perfMode === 'smooth';
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
     camera.position.set(0, 0, 6.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSmooth,
+      alpha: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isSmooth ? 1 : Math.min(window.devicePixelRatio, 1.5));
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -174,7 +186,7 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
     scene.add(molGroup);
 
     // Orbiting halo
-    const haloGeom = new THREE.TorusGeometry(2.4, 0.015, 16, 64);
+    const haloGeom = new THREE.TorusGeometry(2.4, 0.015, isSmooth ? 8 : 16, isSmooth ? 32 : 64);
     const haloMat = new THREE.MeshBasicMaterial({
       color: 0x48e5b4,
       transparent: true,
@@ -189,7 +201,7 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
       }
 
       data.atoms.forEach((atm) => {
-        const geom = new THREE.SphereGeometry(atm.r, 24, 24);
+        const geom = new THREE.SphereGeometry(atm.r, isSmooth ? 14 : 22, isSmooth ? 14 : 22);
         const mat = new THREE.MeshStandardMaterial({
           color: atm.col,
           roughness: 0.25,
@@ -207,7 +219,7 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
         const posA = new THREE.Vector3(...data.atoms[a].pos);
         const posB = new THREE.Vector3(...data.atoms[b].pos);
         const dist = posA.distanceTo(posB);
-        const geom = new THREE.CylinderGeometry(0.045, 0.045, dist, 12);
+        const geom = new THREE.CylinderGeometry(0.045, 0.045, dist, isSmooth ? 8 : 12);
         const mat = new THREE.MeshStandardMaterial({ color: 0xadb5bd, roughness: 0.4 });
         const bond = new THREE.Mesh(geom, mat);
 
@@ -222,6 +234,7 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
     };
 
     renderMoleculeModel(currentMol);
+    container._updateMol = renderMoleculeModel;
 
     // Interaction Drag
     let isDown = false;
@@ -253,15 +266,16 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
 
-    let frameId;
+    let frameId = null;
     let clock = new THREE.Clock();
+    let isIntersecting = true;
+    let isTabVisible = !document.hidden;
 
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
+    const render = () => {
       const elapsed = clock.getElapsedTime();
 
-      if (!isDown && isRotating) {
-        rotY += 0.006;
+      if (!isDown && isRotatingRef.current) {
+        rotY += isSmooth ? 0.004 : 0.006;
       }
 
       molGroup.rotation.y += (rotY - molGroup.rotation.y) * 0.1;
@@ -272,7 +286,55 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
 
       renderer.render(scene, camera);
     };
-    animate();
+
+    const animate = () => {
+      if (!isIntersecting || !isTabVisible) {
+        frameId = null;
+        return;
+      }
+      frameId = requestAnimationFrame(animate);
+      render();
+    };
+
+    const startAnimation = () => {
+      if (!frameId && isIntersecting && isTabVisible) {
+        clock.start();
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    const stopAnimation = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
+
+    // Pause when offscreen
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isIntersecting = entries[0].isIntersecting;
+        if (isIntersecting) {
+          startAnimation();
+        } else {
+          stopAnimation();
+        }
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
+
+    const handleVisibility = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    startAnimation();
 
     const handleResize = () => {
       if (!container) return;
@@ -281,21 +343,42 @@ export default function Molecule3DViewer({ initialMolecule = 'salicylic' }) {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      renderer.render(scene, camera);
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(frameId);
+      stopAnimation();
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
       dom.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('resize', handleResize);
+
+      scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m) => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      });
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [selectedKey, isRotating]);
+  }, [perfMode]);
+
+  // Update molecule dynamically without recreating WebGL context
+  useEffect(() => {
+    if (containerRef.current?._updateMol) {
+      containerRef.current._updateMol(currentMol);
+    }
+  }, [selectedKey]);
 
   return (
     <div

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Sparkles, Shield, User, Camera, MessageSquare, BookOpen, Layers, TrendingUp, Scan } from 'lucide-react';
 
 export default function Navbar() {
-  const { activePage, navigate, user, profile } = useApp();
+  const { activePage, navigate, user, profile, perfMode, togglePerfMode } = useApp();
 
   const navItems = [
     { id: 'home', label: 'Home' },
@@ -102,6 +102,29 @@ export default function Navbar() {
 
         {/* User Actions */}
         <div className="nav-actions">
+          {/* Visual Performance Mode Toggle */}
+          <button
+            onClick={togglePerfMode}
+            className="btn btn-sm"
+            style={{
+              borderRadius: 'var(--radius-full)',
+              padding: '5px 12px',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: perfMode === 'smooth' ? 'var(--color-primary-light)' : 'linear-gradient(135deg, #1B4D3E, #2D5A46)',
+              color: perfMode === 'smooth' ? 'var(--color-primary)' : '#58FFC4',
+              border: `1px solid ${perfMode === 'smooth' ? 'var(--color-primary-border)' : 'rgba(88, 255, 196, 0.4)'}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={perfMode === 'smooth' ? "Currently in Smooth Mode (Low CPU/GPU). Click to enable Enhanced 3D" : "Currently in Enhanced Visuals. Click to switch to Smooth Mode"}
+          >
+            <span>{perfMode === 'smooth' ? '🌿 Smooth' : '✨ Enhanced'}</span>
+          </button>
+
           <button
             onClick={() => navigate('profile')}
             className="btn btn-soft btn-sm"

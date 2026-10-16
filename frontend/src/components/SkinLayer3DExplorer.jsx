@@ -1,10 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Layers, Shield, Droplets, Sparkles, Compass, CheckCircle2 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export default function SkinLayer3DExplorer() {
+  const { perfMode } = useApp();
   const containerRef = useRef(null);
   const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
+  const selectedLayerRef = useRef(selectedLayerIndex);
+
+  useEffect(() => {
+    selectedLayerRef.current = selectedLayerIndex;
+  }, [selectedLayerIndex]);
 
   const layersInfo = [
     {
@@ -40,15 +47,20 @@ export default function SkinLayer3DExplorer() {
 
     const width = container.clientWidth;
     const height = container.clientHeight || 340;
+    const isSmooth = perfMode === 'smooth';
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
     camera.position.set(0, 2.2, 5.2);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSmooth,
+      alpha: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isSmooth ? 1 : Math.min(window.devicePixelRatio, 1.5));
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -100,10 +112,11 @@ export default function SkinLayer3DExplorer() {
       layerMeshes.push(slab);
     });
 
-    // Floating Bioactive Drops entering the skin
-    const dropGeom = new THREE.SphereGeometry(0.08, 16, 16);
+    // Floating Bioactive Drops entering the skin (Adaptive count)
+    const dropCount = isSmooth ? 8 : 16;
+    const dropGeom = new THREE.SphereGeometry(0.08, 12, 12);
     const drops = [];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < dropCount; i++) {
       const dropMat = new THREE.MeshBasicMaterial({
         color: i % 2 === 0 ? 0x58ffc4 : 0x00f5d4,
         transparent: true,
@@ -149,22 +162,24 @@ export default function SkinLayer3DExplorer() {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
 
-    let frameId;
+    let frameId = null;
     let clock = new THREE.Clock();
+    let isIntersecting = true;
+    let isTabVisible = !document.hidden;
 
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
+    const render = () => {
       const elapsed = clock.getElapsedTime();
 
       if (!isDown) {
-        targetRotY += 0.003;
+        targetRotY += isSmooth ? 0.002 : 0.003;
       }
       rootGroup.rotation.y += (targetRotY - rootGroup.rotation.y) * 0.08;
       rootGroup.rotation.x += (targetRotX - rootGroup.rotation.x) * 0.08;
 
       // Highlight active layer by lifting it up slightly
+      const currentActiveIndex = selectedLayerRef.current;
       layerMeshes.forEach((mesh, idx) => {
-        const isSelected = idx === selectedLayerIndex;
+        const isSelected = idx === currentActiveIndex;
         const targetLift = isSelected ? 0.22 : 0;
         const targetY = mesh.userData.baseHeight + targetLift;
         mesh.position.y += (targetY - mesh.position.y) * 0.12;
@@ -188,7 +203,55 @@ export default function SkinLayer3DExplorer() {
 
       renderer.render(scene, camera);
     };
-    animate();
+
+    const animate = () => {
+      if (!isIntersecting || !isTabVisible) {
+        frameId = null;
+        return;
+      }
+      frameId = requestAnimationFrame(animate);
+      render();
+    };
+
+    const startAnimation = () => {
+      if (!frameId && isIntersecting && isTabVisible) {
+        clock.start();
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    const stopAnimation = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
+
+    // Pause when off-screen
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isIntersecting = entries[0].isIntersecting;
+        if (isIntersecting) {
+          startAnimation();
+        } else {
+          stopAnimation();
+        }
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
+
+    const handleVisibility = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    startAnimation();
 
     const handleResize = () => {
       if (!container) return;
@@ -197,21 +260,35 @@ export default function SkinLayer3DExplorer() {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      renderer.render(scene, camera);
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(frameId);
+      stopAnimation();
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
       dom.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('resize', handleResize);
+
+      scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m) => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      });
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [selectedLayerIndex]);
+  }, [perfMode]);
 
   const activeLayer = layersInfo[selectedLayerIndex];
 

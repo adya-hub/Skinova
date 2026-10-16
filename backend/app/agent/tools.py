@@ -3,20 +3,83 @@ Modular Agent Tools for Skinova AI.
 Each tool is cleanly separated, documented, and can be invoked autonomously by the agent.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import io
+import json
+import logging
 import math
 from PIL import Image, ImageStat
+from ..config import GEMINI_API_KEY
 from ..rag.retriever import retriever
 from .safety_guardrail import safety_guardrail
+
+logger = logging.getLogger("skinova.agent.tools")
 
 class SkinImageAnalysisTool:
     """
     Analyzes visual skin images for image quality (lighting, clarity, resolution)
-    and extracts uncertainty-calibrated visible skin indicators.
+    and extracts uncertainty-calibrated visible skin indicators using Gemini 2.0 Flash Multimodal Vision
+    (with graceful fallback to statistical PIL colorimetry).
     """
     name = "skin_image_analysis"
     description = "Analyzes an uploaded skin/face image for quality, lighting, and visible cutaneous characteristics."
+
+    def __init__(self):
+        self.api_key = GEMINI_API_KEY
+        self.gemini_client = None
+        if self.api_key and len(self.api_key) > 5:
+            try:
+                from google import genai
+                self.gemini_client = genai.Client(api_key=self.api_key)
+                logger.info("[SkinImageAnalysisTool] Initialized Google GenAI Client for multimodal vision.")
+            except Exception as e:
+                logger.warning("[SkinImageAnalysisTool] GenAI initialization skipped: %s", e)
+
+    def _analyze_with_gemini_vision(self, img: Image.Image, mime_type: str = "image/jpeg") -> Optional[Dict[str, Any]]:
+        if not self.gemini_client:
+            return None
+        try:
+            from google.genai import types
+            buf = io.BytesIO()
+            # Convert to RGB JPEG for consistent vision ingestion
+            rgb_img = img.convert("RGB")
+            rgb_img.save(buf, format="JPEG", quality=85)
+            img_bytes = buf.getvalue()
+
+            prompt = (
+                "You are Skinova's clinical educational vision analysis assistant.\n"
+                "Observe this skin image carefully and assess visible surface characteristics.\n\n"
+                "STRICT HEALTHCARE & SAFETY INSTRUCTIONS:\n"
+                "- Do NOT diagnose any medical condition or claim certainty.\n"
+                "- Use uncertainty-calibrated language (e.g., 'visible indicators consistent with...', 'observations suggest...').\n"
+                "- Categorize indicators into: 'Low', 'Moderate', 'High', or 'Elevated'.\n"
+                "- Return STRICT JSON with keys:\n"
+                '  "acne_like_breakouts": "Low" | "Moderate" | "High",\n'
+                '  "oiliness": "Low" | "Moderate" | "High",\n'
+                '  "visible_redness": "Low" | "Moderate" | "Elevated",\n'
+                '  "dryness": "Low" | "Moderate" | "High",\n'
+                '  "visible_pigmentation": "Low" | "Moderate" | "High",\n'
+                '  "texture_irregularities": "Smooth" | "Mild" | "Moderate",\n'
+                '  "observation_summary": string (2-3 sentences of educational observations),\n'
+                '  "quality_notes": list of strings regarding lighting, exposure, or focus\n'
+            )
+
+            image_part = types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg")
+            response = self.gemini_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[image_part, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+
+            if response.text:
+                parsed = json.loads(response.text)
+                logger.info("[SkinImageAnalysisTool] Successfully extracted Gemini 2.0 Flash multimodal vision indicators.")
+                return parsed
+        except Exception as e:
+            logger.warning("[SkinImageAnalysisTool] Gemini vision call encountered error: %s. Using heuristic analysis.", e)
+        return None
 
     def execute(self, image_bytes: bytes, filename: str = "skin_image.jpg") -> Dict[str, Any]:
         try:
@@ -24,7 +87,7 @@ class SkinImageAnalysisTool:
             width, height = img.size
             img_format = img.format or "JPEG"
 
-            # Image quality checks
+            # Image quality checks via PIL
             grayscale = img.convert("L")
             stat = ImageStat.Stat(grayscale)
             mean_brightness = stat.mean[0] # 0 to 255
@@ -47,7 +110,38 @@ class SkinImageAnalysisTool:
             if std_dev < 15:
                 quality_notes.append("Low contrast or possible heavy blur/filter detected.")
 
-            # Compute calibrated visible indicators based on image colorimetry & entropy
+            # Attempt Gemini 2.0 Flash Multimodal Vision
+            gemini_vision_data = self._analyze_with_gemini_vision(img, f"image/{img_format.lower()}")
+
+            if gemini_vision_data:
+                vis_indicators = {
+                    "acne_like_breakouts": gemini_vision_data.get("acne_like_breakouts", "Moderate"),
+                    "oiliness": gemini_vision_data.get("oiliness", "Moderate"),
+                    "visible_redness": gemini_vision_data.get("visible_redness", "Mild"),
+                    "dryness": gemini_vision_data.get("dryness", "Low"),
+                    "visible_pigmentation": gemini_vision_data.get("visible_pigmentation", "Moderate"),
+                    "texture_irregularities": gemini_vision_data.get("texture_irregularities", "Mild")
+                }
+                obs_summary = gemini_vision_data.get("observation_summary") or (
+                    "Visible indicators consistent with localized cutaneous characteristics. "
+                    "Skin surface displays balanced exposure and identifiable features."
+                )
+                extra_notes = gemini_vision_data.get("quality_notes", [])
+                if extra_notes:
+                    quality_notes.extend([n for n in extra_notes if n not in quality_notes])
+
+                return {
+                    "success": True,
+                    "dimensions": f"{width}x{height}",
+                    "format": img_format,
+                    "quality_status": quality_status,
+                    "quality_notes": quality_notes or ["Clear image with balanced exposure."],
+                    "engine": "gemini-2.0-flash-vision",
+                    "visible_indicators": vis_indicators,
+                    "observation_summary": safety_guardrail.sanitize_diagnostic_language(obs_summary)
+                }
+
+            # Statistical heuristic fallback
             rgb_img = img.convert("RGB")
             r, g, b = rgb_img.split()
             r_mean = ImageStat.Stat(r).mean[0]
@@ -77,6 +171,7 @@ class SkinImageAnalysisTool:
                 "format": img_format,
                 "quality_status": quality_status,
                 "quality_notes": quality_notes or ["Clear image with balanced exposure."],
+                "engine": "colorimetry-statistical-fallback",
                 "visible_indicators": {
                     "acne_like_breakouts": "Moderate",
                     "oiliness": oiliness_level,
@@ -95,10 +190,6 @@ class SkinImageAnalysisTool:
                 "success": False,
                 "error": f"Skinova couldn't process this image: {str(e)}. Please upload a valid JPEG or PNG photo."
             }
-
-import logging
-
-logger = logging.getLogger("skinova.agent.tools")
 
 class SkinProfileRetrievalTool:
     """

@@ -11,6 +11,7 @@ export default function SkinScan3DOverlay({ imageUrl, isScanning = false, scanPr
   });
 
   useEffect(() => {
+    if (!isScanning) return;
     const interval = setInterval(() => {
       setTelemetry((prev) => ({
         ...prev,
@@ -18,7 +19,7 @@ export default function SkinScan3DOverlay({ imageUrl, isScanning = false, scanPr
       }));
     }, 1200);
     return () => clearInterval(interval);
-  }, []);
+  }, [isScanning]);
 
   return (
     <div

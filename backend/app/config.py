@@ -16,6 +16,11 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
 PORT = int(os.getenv("PORT", "8000"))
 HOST = os.getenv("HOST", "0.0.0.0")
 
+# Supabase Cloud Database Configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
+HAS_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
+
 # App metadata
 APP_NAME = "Skinova AI"
 APP_TAGLINE = "Understand Your Skin. Make Smarter Choices."

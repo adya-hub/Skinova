@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Sparkles,
@@ -20,11 +20,13 @@ import {
 } from 'lucide-react';
 import MedicalDisclaimer from '../components/MedicalDisclaimer';
 import Skinova3DHero from '../components/Skinova3DHero';
-import SkinLayer3DExplorer from '../components/SkinLayer3DExplorer';
-import Molecule3DViewer from '../components/Molecule3DViewer';
+
+// Lazy-load secondary 3D lab components to keep initial page render instant
+const SkinLayer3DExplorer = lazy(() => import('../components/SkinLayer3DExplorer'));
+const Molecule3DViewer = lazy(() => import('../components/Molecule3DViewer'));
 
 export default function LandingPage() {
-  const { navigate } = useApp();
+  const { navigate, perfMode, togglePerfMode } = useApp();
   const [activeLabTab, setActiveLabTab] = useState('layers'); // 'layers' | 'molecules'
   const [selectedHotspotData, setSelectedHotspotData] = useState(null);
 
@@ -204,9 +206,11 @@ export default function LandingPage() {
                   <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-primary)' }}>14+</div>
                   <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Cutaneous Markers</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-accent)' }}>3D WebGL</div>
-                  <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Biometric Engine</div>
+                <div onClick={togglePerfMode} style={{ cursor: 'pointer' }} title="Click to toggle between Smooth Mode and Enhanced 3D">
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--color-accent)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {perfMode === 'smooth' ? '🌿 Smooth' : '✨ Enhanced'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Click to switch mode</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-emerald-text)' }}>100%</div>
@@ -344,13 +348,42 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Render Active 3D Component */}
-          <div style={{ maxWidth: '940px', margin: '0 auto' }}>
-            {activeLabTab === 'layers' ? (
-              <SkinLayer3DExplorer />
-            ) : (
-              <Molecule3DViewer initialMolecule="salicylic" />
-            )}
+          {/* Render Active 3D Component with Suspense */}
+          <div style={{ maxWidth: '940px', margin: '0 auto', minHeight: '380px' }}>
+            <Suspense fallback={
+              <div
+                style={{
+                  height: '340px',
+                  borderRadius: 'var(--radius-xl)',
+                  background: 'linear-gradient(135deg, #0d1e16 0%, #132a1f 100%)',
+                  border: '1px solid rgba(88, 255, 196, 0.2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  color: '#58FFC4'
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '3px solid rgba(88, 255, 196, 0.2)',
+                  borderTopColor: '#58FFC4',
+                  animation: 'spin 0.8s linear infinite'
+                }} />
+                <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                  Initializing 3D Interactive Lab...
+                </span>
+              </div>
+            }>
+              {activeLabTab === 'layers' ? (
+                <SkinLayer3DExplorer />
+              ) : (
+                <Molecule3DViewer initialMolecule="salicylic" />
+              )}
+            </Suspense>
           </div>
         </section>
 

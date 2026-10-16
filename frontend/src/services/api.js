@@ -2,7 +2,9 @@
  * Unified API Client for Skinova AI Backend
  */
 
-const API_BASE = '/api';
+// Base API endpoint - uses VITE_API_URL in production or defaults to /api (proxied locally by Vite)
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+
 
 export const api = {
   // Health

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Eye, Shield, Droplets, Sparkles, RefreshCw, ZoomIn, ZoomOut, Compass, Layers, Zap } from 'lucide-react';
+import { Compass } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export default function Skinova3DHero({ onHotspotClick }) {
+  const { perfMode } = useApp();
   const containerRef = useRef(null);
   const [activeMode, setActiveMode] = useState('face'); // 'face' | 'dermal' | 'molecule'
   const [selectedHotspot, setSelectedHotspot] = useState(null);
@@ -10,11 +12,20 @@ export default function Skinova3DHero({ onHotspotClick }) {
   const [isInteracting, setIsInteracting] = useState(false);
 
   const activeModeRef = useRef(activeMode);
-  activeModeRef.current = activeMode;
   const activeMoleculeRef = useRef(activeMolecule);
-  activeMoleculeRef.current = activeMolecule;
   const onHotspotClickRef = useRef(onHotspotClick);
-  onHotspotClickRef.current = onHotspotClick;
+
+  useEffect(() => {
+    activeModeRef.current = activeMode;
+  }, [activeMode]);
+
+  useEffect(() => {
+    activeMoleculeRef.current = activeMolecule;
+  }, [activeMolecule]);
+
+  useEffect(() => {
+    onHotspotClickRef.current = onHotspotClick;
+  }, [onHotspotClick]);
 
   // Hotspots data for the 3D Face Scan mode
   const hotspotsData = [
@@ -69,11 +80,17 @@ export default function Skinova3DHero({ onHotspotClick }) {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0.4, 4.8);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const isSmooth = perfMode === 'smooth';
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSmooth,
+      alpha: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // In Smooth Mode, cap to 1.0 (saving 75% GPU fragment overhead on high-DPI). In Enhanced, cap to 1.5.
+    renderer.setPixelRatio(isSmooth ? 1 : Math.min(window.devicePixelRatio, 1.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.15;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -81,15 +98,15 @@ export default function Skinova3DHero({ onHotspotClick }) {
     const ambientLight = new THREE.AmbientLight(0xd4eee2, 0.85);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x5b8e7d, 2.5);
+    const dirLight1 = new THREE.DirectionalLight(0x5b8e7d, 2.2);
     dirLight1.position.set(5, 8, 5);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xa5d6b8, 1.8);
+    const dirLight2 = new THREE.DirectionalLight(0xa5d6b8, 1.5);
     dirLight2.position.set(-5, -4, -3);
     scene.add(dirLight2);
 
-    const cyanLight = new THREE.PointLight(0x40e0d0, 3, 10);
+    const cyanLight = new THREE.PointLight(0x40e0d0, 2.5, 9);
     cyanLight.position.set(0, 2, 2.5);
     scene.add(cyanLight);
 
@@ -97,8 +114,8 @@ export default function Skinova3DHero({ onHotspotClick }) {
     const rootGroup = new THREE.Group();
     scene.add(rootGroup);
 
-    // Background Particle Cloud
-    const particleCount = 200;
+    // Background Particle Cloud (Adaptive count)
+    const particleCount = isSmooth ? 60 : 150;
     const particleGeometry = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i += 3) {
@@ -109,9 +126,9 @@ export default function Skinova3DHero({ onHotspotClick }) {
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
     const particleMaterial = new THREE.PointsMaterial({
       color: 0x68b394,
-      size: 0.06,
+      size: 0.055,
       transparent: true,
-      opacity: 0.55,
+      opacity: isSmooth ? 0.4 : 0.55,
       blending: THREE.AdditiveBlending
     });
     const bgParticles = new THREE.Points(particleGeometry, particleMaterial);
@@ -169,18 +186,18 @@ export default function Skinova3DHero({ onHotspotClick }) {
     const faceMesh = new THREE.Mesh(headGeom, wireMaterial);
     faceGroup.add(faceMesh);
 
-    // Luminous Hologram Inner Shell
-    const glowMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x9be0c2,
-      emissive: 0x246348,
-      emissiveIntensity: 0.4,
+    // Luminous Hologram Inner Shell (Optimized lightweight shader without transmission multi-pass)
+    const glowMaterial = new THREE.MeshStandardMaterial({
+      color: 0x58ffc4,
+      emissive: 0x1f4735,
+      emissiveIntensity: 0.38,
       transparent: true,
-      opacity: 0.28,
-      roughness: 0.2,
-      transmission: 0.6,
-      ior: 1.4
+      opacity: 0.22,
+      roughness: 0.3,
+      blending: THREE.AdditiveBlending
     });
-    const glowInnerMesh = new THREE.Mesh(headGeom.clone().scale(0.97, 0.97, 0.97), glowMaterial);
+    const innerGeom = headGeom.clone().scale(0.97, 0.97, 0.97);
+    const glowInnerMesh = new THREE.Mesh(innerGeom, glowMaterial);
     faceGroup.add(glowInnerMesh);
 
     // Glowing Vertex Dots
@@ -258,10 +275,10 @@ export default function Skinova3DHero({ onHotspotClick }) {
     rootGroup.add(dermalGroup);
     dermalGroup.visible = false;
 
-    // Stratum Corneum lipid bilayer spheres
-    const dermalCount = 90;
+    // Stratum Corneum lipid bilayer spheres (Adaptive count)
+    const dermalCount = isSmooth ? 36 : 75;
     const dermalSpheres = [];
-    const sphereGeom = new THREE.SphereGeometry(0.18, 16, 16);
+    const sphereGeom = new THREE.SphereGeometry(0.18, isSmooth ? 12 : 16, isSmooth ? 12 : 16);
 
     for (let i = 0; i < dermalCount; i++) {
       const u = Math.random();
@@ -304,7 +321,7 @@ export default function Skinova3DHero({ onHotspotClick }) {
       curvePoints.push(new THREE.Vector3(Math.cos(angle) * radius, y, Math.sin(angle) * radius));
     }
     const helixCurve = new THREE.CatmullRomCurve3(curvePoints);
-    const helixGeom = new THREE.TubeGeometry(helixCurve, 90, 0.04, 8, false);
+    const helixGeom = new THREE.TubeGeometry(helixCurve, isSmooth ? 45 : 75, 0.04, 6, false);
     const helixMat = new THREE.MeshStandardMaterial({
       color: 0x80ed99,
       emissive: 0x38b000,
@@ -486,18 +503,19 @@ export default function Skinova3DHero({ onHotspotClick }) {
     domEl.addEventListener('click', handleClick);
 
     // -------------------------------------------------------------
-    // Animation Loop
+    // Performance-Aware Animation Loop (Intersection & Tab Visibility)
     // -------------------------------------------------------------
-    let animationFrameId;
+    let animationFrameId = null;
     let clock = new THREE.Clock();
+    let isIntersecting = true;
+    let isTabVisible = !document.hidden;
 
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
+    const renderFrame = () => {
       const elapsed = clock.getElapsedTime();
 
       // Smooth damping rotation
       if (!isMouseDown) {
-        targetRotationY += 0.0035; // Gentle auto-rotate
+        targetRotationY += isSmooth ? 0.0025 : 0.0035; // Gentle auto-rotate
       }
       rootGroup.rotation.y += (targetRotationY - rootGroup.rotation.y) * 0.08;
       rootGroup.rotation.x += (targetRotationX - rootGroup.rotation.x) * 0.08;
@@ -522,7 +540,7 @@ export default function Skinova3DHero({ onHotspotClick }) {
 
       } else if (currentMode === 'dermal') {
         dermalSpheres.forEach((d) => {
-          const [bx, by, bz] = d.userData.basePos;
+          const [bx, by] = d.userData.basePos;
           d.position.x = bx + Math.sin(elapsed * d.userData.speed + d.userData.phase) * 0.08;
           d.position.y = by + Math.cos(elapsed * d.userData.speed + d.userData.phase) * 0.08;
         });
@@ -539,7 +557,56 @@ export default function Skinova3DHero({ onHotspotClick }) {
       renderer.render(scene, camera);
     };
 
-    animate();
+    const animate = () => {
+      if (!isIntersecting || !isTabVisible) {
+        animationFrameId = null;
+        return;
+      }
+      animationFrameId = requestAnimationFrame(animate);
+      renderFrame();
+    };
+
+    const startAnimation = () => {
+      if (!animationFrameId && isIntersecting && isTabVisible) {
+        clock.start();
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    const stopAnimation = () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    // Pause rendering when scrolled out of view (saves ~95% GPU when user is reading down the page)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        isIntersecting = entry.isIntersecting;
+        if (isIntersecting) {
+          startAnimation();
+        } else {
+          stopAnimation();
+        }
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
+
+    // Pause rendering when browser tab is inactive
+    const handleVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    startAnimation();
 
     // Resize Handler
     const handleResize = () => {
@@ -549,6 +616,7 @@ export default function Skinova3DHero({ onHotspotClick }) {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      renderer.render(scene, camera);
     };
     window.addEventListener('resize', handleResize);
 
@@ -557,24 +625,40 @@ export default function Skinova3DHero({ onHotspotClick }) {
       faceGroup.visible = mode === 'face';
       dermalGroup.visible = mode === 'dermal';
       moleculeGroup.visible = mode === 'molecule';
+      if (!animationFrameId) renderer.render(scene, camera);
     };
     container._updateMolecule = (m) => {
       buildMolecule(m);
+      if (!animationFrameId) renderer.render(scene, camera);
     };
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      stopAnimation();
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       domEl.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       domEl.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
+
+      // Deep WebGL resource cleanup
+      scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m) => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      });
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [perfMode]);
 
   // Update modes inside existing Three.js context
   useEffect(() => {

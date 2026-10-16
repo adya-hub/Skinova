@@ -909,3 +909,34 @@ p {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
+/* ========================================================
+   Performance-Friendly Visual Mode ("Smooth Mode" Adaptations)
+   ======================================================== */
+[data-perf-mode="smooth"] .aurora-hero-bg::before,
+[data-perf-mode="smooth"] .aurora-hero-bg::after {
+  animation: none !important;
+  filter: blur(35px) !important;
+  transform: none !important;
+}
+
+[data-perf-mode="smooth"] .live-radar-dot::before {
+  animation: none !important;
+  opacity: 0.5;
+}
+
+[data-perf-mode="smooth"] .feature-card-3d:hover {
+  transform: translateY(-2px) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .aurora-hero-bg::before,
+  .aurora-hero-bg::after {
+    animation: none !important;
+  }
+}
+
